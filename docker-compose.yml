@@ -1,0 +1,35 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-traffic-analyzer
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AI_PROVIDER=${AI_PROVIDER:-mock}
+      - AI_API_BASE_URL=${AI_API_BASE_URL:-}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-}
+      - DATABASE_URL=file:/app/db/custom.db
+      - VIDEO_STORAGE_PATH=/app/storage/videos
+      - OUTPUT_STORAGE_PATH=/app/storage/outputs
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-1024}
+      - DEFAULT_FRAME_RATE=${DEFAULT_FRAME_RATE:-2}
+    volumes:
+      - traffic-db:/app/db
+      - traffic-videos:/app/storage/videos
+      - traffic-outputs:/app/storage/outputs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  traffic-db:
+  traffic-videos:
+  traffic-outputs:

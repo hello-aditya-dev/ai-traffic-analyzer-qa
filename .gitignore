@@ -1,0 +1,73 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+
+# database
+/db/*.db
+/db/*.db-journal
+/prisma/migrations/dev.db*
+
+# storage (uploaded videos + outputs)
+/storage/
+!/storage/.gitkeep
+
+# data samples (large media — see data/samples/README.md)
+/data/samples/*
+!/data/samples/README.md
+
+# logs
+*.log
+dev.log
+server.log
+
+# tool / scratch
+/tool-results/
+/download/
+/skills/
+/.zscripts/
+
+# caddy (local dev gateway)
+Caddyfile
+
+# build scratch / agent coordination (not part of product)
+/worklog.md
+/upload/
+/examples/
+/mini-services/
+
+# test artifacts (keep the test source, ignore run output)
+/test-results/
+/tests/.playwright-report/
+/tests/results/
+/coverage/
+/dist/
+tests/.playwright-artifacts/
+tests/.playwright-report/
+tsconfig.tsbuildinfo

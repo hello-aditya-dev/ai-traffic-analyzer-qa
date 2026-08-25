@@ -1,0 +1,198 @@
+// AI Traffic Analyzer — Prisma schema
+// SQLite default datasource. Switchable to PostgreSQL for production deployments.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  location    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  videos   VideoAsset[]
+  zones    Zone[]
+  rules    Rule[]
+  reports  Report[]
+  analyses AnalysisRun[]
+}
+
+model VideoAsset {
+  id         String   @id @default(cuid())
+  projectId  String
+  filename   String
+  filePath   String
+  duration   Float    @default(0)
+  width      Int      @default(0)
+  height     Int      @default(0)
+  fps        Float    @default(0)
+  frameCount Int      @default(0)
+  status     String   @default("READY") // READY, PROCESSING, COMPLETED, FAILED
+  createdAt  DateTime @default(now())
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analyses  AnalysisRun[]
+
+  @@index([projectId])
+}
+
+model AnalysisRun {
+  id                 String    @id @default(cuid())
+  projectId          String
+  videoId            String
+  provider           String    @default("mock")
+  status             String    @default("QUEUED") // QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED
+  startedAt          DateTime  @default(now())
+  completedAt       DateTime?
+  processingDuration Float?
+  errorMessage      String?
+  configurationJson String?
+
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  video     VideoAsset   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  detections Detection[]
+  tracks     Track[]
+  events     Event[]
+  reports    Report[]
+
+  @@index([projectId])
+  @@index([videoId])
+}
+
+model Detection {
+  id          String   @id @default(cuid())
+  analysisId  String
+  objectId    String
+  objectType  String
+  confidence  Float
+  frameIndex  Int
+  timestamp   Float
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+
+  analysis AnalysisRun @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([objectId])
+}
+
+model Track {
+  id                String   @id @default(cuid())
+  analysisId        String
+  trackId           String
+  objectType        String
+  firstSeen         Float
+  lastSeen          Float
+  averageConfidence Float
+  startX            Float
+  startY            Float
+  endX              Float
+  endY              Float
+  direction         String
+  estimatedSpeed    Float?
+
+  analysis AnalysisRun @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([trackId])
+}
+
+model Zone {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  polygon    String // JSON-encoded array of {x,y} points (normalized 0-1)
+  zoneType   String   @default("zone") // zone, lane, entrance, intersection, restricted
+  color      String   @default("#10b981")
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Rule {
+  id             String   @id @default(cuid())
+  projectId      String
+  name           String
+  ruleType       String // COUNT_CROSSING, ZONE_ENTRY, ZONE_EXIT, STOPPED_VEHICLE, WRONG_WAY, CONGESTION, DWELL_TIME
+  parametersJson String?
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Event {
+  id            String   @id @default(cuid())
+  analysisId    String
+  ruleId        String?
+  eventType     String
+  severity      String   @default("info") // info, low, medium, high, critical
+  timestamp     Float
+  objectId       String?
+  trackId       String?
+  metadataJson  String?
+  snapshotPath  String?
+
+  analysis AnalysisRun @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@index([eventType])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  projectId  String
+  analysisId String?
+  generatedAt DateTime @default(now())
+  format     String   // html, pdf, csv, json, xlsx
+  path       String
+  title      String?
+  author     String?
+  companyName String?
+
+  project  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysis AnalysisRun?  @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+}
+
+model Camera {
+  id                String   @id @default(cuid())
+  name              String
+  rtspUrl           String
+  username          String?
+  password          String?
+  transport         String   @default("tcp") // tcp, udp
+  streamProfile     String?
+  reconnectInterval Int      @default(30)
+  createdAt         DateTime @default(now())
+}
+
+model ProviderConfig {
+  id           String   @id @default(cuid())
+  provider     String   @default("mock")
+  apiUrl       String?
+  apiKey       String?
+  model        String?
+  timeout      Int      @default(30)
+  retries      Int      @default(3)
+  frameRate    Float    @default(2)
+  confidence   Float    @default(0.5)
+  maxFrames    Int      @default(5000)
+  resolution   String   @default("720p")
+  updatedAt   DateTime @updatedAt
+}
